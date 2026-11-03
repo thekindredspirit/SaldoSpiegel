@@ -1,70 +1,66 @@
 # SaldoSpiegel
 
-SaldoSpiegel helps you review monthly income, spending, and net cash flow. For now, the dashboard uses fictional transactions for September and October 2026.
+SaldoSpiegel is a small personal finance dashboard for reviewing monthly income, spending, and net cash flow. It starts with fictional transactions so the dashboard can be explored before any personal entries are added.
 
-SaldoSpiegel runs locally and is meant for one person. This version does not connect to a bank or save transactions you enter.
+The app runs in a browser and does not connect to a bank. Transactions you add are saved in the browser that you are using.
 
 ## Current milestone
 
-**Dashboard foundation (v0.1.0)**
+**Manual transaction management (v0.2.0)**
 
-The current build includes:
+This milestone builds on the dashboard foundation with:
 
 - Monthly income, spending, and net cash flow summaries.
-- A comparison with the previous sample month.
 - Spending totals and shares grouped by category.
-- A recent transaction table.
-- A month selector for the included sample periods.
+- Month-to-month comparisons when an earlier month is available.
+- A month selector and a full transaction list for the selected month.
+- Forms to add and edit income or expense transactions, and remove entries.
+- Browser storage for transactions after the first change.
 - Responsive layout and visible keyboard focus states.
 
-This version is a read-only preview. All displayed transactions are fictional.
+The initial entries are fictional. After the first successful change, the dashboard uses the saved list, which starts with those sample entries.
 
-## Preview
+## Run locally
 
-Open the project through a local web server so the browser can load its JavaScript modules.
-
-From this folder, run:
+Open a terminal in this folder and start a local web server:
 
     py -m http.server 8000 --bind 127.0.0.1
 
-Then open:
+Then open http://localhost:8000 in a browser. If the Python launcher is named differently on your system, use Python 3.8 or later to run its built-in HTTP server with the same bind address. Stop the server with Ctrl+C in the terminal.
 
-    http://localhost:8000
-
-If the Python launcher on your system is named differently, use Python 3.8 or later to start its built-in HTTP server with the same bind address. Stop the server with Ctrl+C in the terminal.
-
-No installation or build step is needed.
+No package installation or build step is needed.
 
 ## Using the dashboard
 
-Use the month selector near the page heading to switch between September and October 2026. The three summary cards show:
+Choose a month near the page heading to review its transactions. Use **Add transaction** to enter an income or expense. Existing entries can be edited or deleted from the table.
 
-- **Income:** the sum of entries marked as income.
-- **Spending:** the sum of entries marked as expenses.
-- **Monthly net:** income minus spending for the selected month.
+Enter a positive amount in euros, using either a dot or comma and up to two decimal places. An entry's type determines whether the amount contributes to income or spending. Monthly net is calculated as income minus spending; it is not a bank account balance. Category shares are calculated from that month's expenses.
 
-The spending panel groups expense entries by category and shows each category's share of the month's spending. The transaction table shows up to eight latest entries for the selected month.
-
-Amounts are stored as integer euro cents in the sample data. This avoids floating-point arithmetic when adding transaction amounts. The interface formats those amounts as euros.
-
-## Project structure
-
-    index.html          Page structure and accessible labels
-    styles.css          Layout, visual design, and responsive rules
-    src/app.js          Monthly calculations and rendering
-    src/data.js         Synthetic transaction records
-    docs/architecture.md  How the dashboard is structured
-    CHANGELOG.md          Release notes
+Amounts are kept as integer euro cents to avoid common floating-point rounding errors. The dashboard currently uses one currency and a fixed set of categories.
 
 ## Data and privacy
 
-The fictional sample records are in src/data.js. The browser loads that file when you open the page.
+Your changes are saved in this browser's local storage for the current site address. They stay in this browser profile and are not sent to a bank or an external service. Local storage is not encrypted, is tied to the browser profile and site address, and can be removed when browser data is cleared. There is no export or backup feature yet.
 
 Do not use real personal financial information in screenshots, sample files, or public issue reports. The sample records are fictional and should not be used to make financial decisions.
 
+## Project structure
+
+    index.html            Page structure, dashboard, and transaction form
+    styles.css            Layout, visual design, and responsive rules
+    src/app.js            Calculations, browser storage, and interface behavior
+    src/data.js           Fictional sample transactions
+    docs/architecture.md  Application structure and data flow
+    CHANGELOG.md          Milestone notes
+    LICENSE               MIT License
+
 ## Current limitations
 
-- Transactions cannot yet be created, edited, deleted, or saved.
-- The dashboard only contains the two sample months in src/data.js.
-- The monthly net figure is calculated from the listed transactions. It is not a bank account balance.
-- The sample dataset is illustrative and should not be used for financial decisions.
+- There is no export or restore workflow for saved transactions.
+- Data is stored in one browser profile and is not encrypted.
+- Categories and currency are fixed to the options in the form.
+- The dashboard is a personal record-keeping tool, not financial advice or a bank balance tracker.
+
+## License
+
+SaldoSpiegel is licensed under the MIT License. See [LICENSE](LICENSE) for the full text.

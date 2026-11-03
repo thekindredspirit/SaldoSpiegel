@@ -1,37 +1,32 @@
-# Foundation architecture
+# Application architecture
 
 ## Overview
 
-SaldoSpiegel currently runs as a static browser application. It has no backend, database, third-party service, build tool, or runtime dependency.
+SaldoSpiegel is a static browser application. It has no backend, database, build tool, package installation, or runtime dependency. The browser loads the page, stylesheet, sample module, and application module from the local web server.
 
 ## Files
 
-- index.html supplies the page structure and accessible labels.
-- styles.css supplies the visual system, layout, responsive behavior, and reduced-motion handling.
-- src/data.js exports the synthetic transaction list.
-- src/app.js derives monthly totals from that list, populates the month selector, and renders the category breakdown and recent activity.
+- index.html contains the dashboard, transaction form, and accessible labels.
+- styles.css contains the visual styles, responsive layout, focus states, and reduced-motion handling.
+- src/data.js exports the fictional sample transaction list.
+- src/app.js loads saved transactions when available, calculates selected-month totals, updates the month selector, renders the category breakdown and transaction list, and handles transaction changes.
 
-## Sample transaction shape
+## Transaction data
 
-Each sample record has:
+Each transaction has an id, ISO date (YYYY-MM-DD), description, optional merchant, category, type, and positive integer amountCents. The type is either income or expense; it determines where an amount is included in the dashboard. Income uses the Income category. Expense categories are selected from the fixed list in the application.
 
-- id: a stable identifier within the sample list.
-- date: an ISO date in YYYY-MM-DD form.
-- description and merchant: the text shown in the activity table.
-- category: a display category.
-- type: either income or expense.
-- amountCents: a positive integer amount in euro cents.
+Sample transactions are exported from src/data.js. Until the user makes a change, the dashboard uses a copy of those records. After a successful add, edit, or delete, the full transaction list is saved as JSON under the saldospiegel.transactions.v1 key in browser local storage. On later visits to the same site address and browser profile, the saved list takes precedence over the sample list.
 
-The amount stays positive in the data. The type field controls whether it contributes to income or spending, and the interface adds the appropriate sign when displaying it.
+Local storage is not encrypted. The app does not transmit transaction data to a server or external service. If browser storage is unavailable, changes remain in memory only and the interface reports that they were not saved. If saved JSON is malformed, the app falls back to sample entries and reports that saving a change will replace the unreadable value.
 
 ## Calculations
 
-For a selected month, the dashboard filters entries by the YYYY-MM portion of their date. It sums income and expense entries separately, then calculates:
+For the selected month, transactions are filtered by the YYYY-MM prefix of their date. Income and expenses are summed separately, then:
 
     monthly net = income total - expense total
 
-Category shares use each category's expense total divided by total spending for the selected month. Month-to-month percentages use the previous sample month when one is available.
+Category shares are each category's expense total divided by total spending for that month. Month-to-month comparisons use the closest earlier month present in the transaction list.
 
-## Data flow
+## Interface updates
 
-The browser imports the sample records when the page loads. A month selection triggers a fresh calculation from those records and updates the summary cards, category list, and recent transaction rows. The page does not mutate or save the sample data.
+The month selector is rebuilt after a transaction change so a new date can become the selected month. Summary cards, category totals, and transaction rows are then rendered from the current in-memory list. Changes are written to local storage after the interface state is updated. A storage error is reported to the user and the current tab continues to show the in-memory change.

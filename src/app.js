@@ -1,212 +1,325 @@
-import { transactions } from "./data.js";
+import { transactions as sampleTransactions } from "./data.js";
 
-const currencyFormatter = new Intl.NumberFormat("en-IE", {
-  style: "currency",
-  currency: "EUR"
-});
-const monthFormatter = new Intl.DateTimeFormat("en-GB", {
-  month: "long",
-  year: "numeric"
-});
-const dateFormatter = new Intl.DateTimeFormat("en-GB", {
-  day: "2-digit",
-  month: "short"
-});
+const STORAGE_KEY = "saldospiegel.transactions.v1";
+const EXPENSE_CATEGORIES = [
+  "Housing", "Groceries", "Transport", "Utilities", "Dining", "Education",
+  "Subscriptions", "Health", "Leisure", "Shopping", "Fitness"
+];
+const CATEGORIES = { expense: EXPENSE_CATEGORIES, income: ["Income"] };
+const currency = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
+const monthFormatter = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
+const dateFormatter = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short" });
 
 const monthFilter = document.querySelector("#month-filter");
-const monthKeys = [...new Set(transactions.map((transaction) => transaction.date.slice(0, 7)))]
-  .sort()
-  .reverse();
+const dialog = document.querySelector("#transaction-dialog");
+const form = document.querySelector("#transaction-form");
+const typeField = document.querySelector("#transaction-type");
+const categoryField = document.querySelector("#transaction-category");
+const dateField = document.querySelector("#transaction-date");
+const amountField = document.querySelector("#transaction-amount");
+let editingId = null;
+let monthKeys = [];
 
-function monthDate(monthKey) {
-  return new Date(monthKey + "-15T12:00:00");
+function validDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(value + "T00:00:00.000Z");
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
-function formatMonth(monthKey) {
-  return monthFormatter.format(monthDate(monthKey));
+function validTransaction(item) {
+  return item && typeof item.id === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(item.id) &&
+    validDate(item.date) && typeof item.description === "string" &&
+    item.description.trim().length > 0 && item.description.length <= 100 &&
+    typeof item.merchant === "string" && item.merchant.length <= 100 &&
+    (item.type === "income" || item.type === "expense") &&
+    CATEGORIES[item.type].includes(item.category) &&
+    Number.isSafeInteger(item.amountCents) && item.amountCents > 0;
 }
 
-function formatMoney(amountCents) {
-  return currencyFormatter.format(amountCents / 100);
+function loadSavedTransactions() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === null) {
+      return { items: sampleTransactions.map((item) => ({ ...item })), loaded: false, warning: "" };
+    }
+    const items = JSON.parse(saved);
+    const ids = new Set();
+    if (!Array.isArray(items) || !items.every((item) => {
+      if (!validTransaction(item) || ids.has(item.id)) return false;
+      ids.add(item.id);
+      return true;
+    })) throw new Error("Invalid saved data");
+    return { items, loaded: true, warning: "" };
+  } catch (error) {
+    const warning = error instanceof SyntaxError || error.message === "Invalid saved data"
+      ? "Saved data could not be read. Sample entries are shown; saving a change will replace the unreadable data."
+      : "Browser storage is unavailable. Changes will only last for this tab.";
+    return { items: sampleTransactions.map((item) => ({ ...item })), loaded: false, warning };
+  }
 }
 
-function formatDate(dateString) {
-  return dateFormatter.format(new Date(dateString + "T12:00:00"));
+const initialData = loadSavedTransactions();
+let transactions = initialData.items;
+
+function saveTransactions() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function formatMonth(key) {
+  return monthFormatter.format(new Date(key + "-15T12:00:00"));
+}
+
+function formatMoney(cents) {
+  return currency.format(cents / 100);
+}
+
+function formatDate(value) {
+  return dateFormatter.format(new Date(value + "T12:00:00"));
 }
 
 function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (character) => {
-    const entities = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      "\"": "&quot;",
-      "'": "&#39;"
-    };
-    return entities[character];
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+  })[character]);
+}
+
+function categorySlug(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function setText(selector, value) {
+  document.querySelector(selector).textContent = value;
+}
+
+function status(message) {
+  setText("#app-status", message);
+}
+
+function thisMonth() {
+  const date = new Date();
+  return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
+}
+
+function refreshMonthOptions(preferred) {
+  const months = new Set(transactions.map((item) => item.date.slice(0, 7)));
+  if (preferred) months.add(preferred);
+  if (!months.size) months.add(thisMonth());
+  monthKeys = [...months].sort().reverse();
+  monthFilter.replaceChildren();
+  monthKeys.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = formatMonth(key);
+    monthFilter.append(option);
   });
+  monthFilter.value = monthKeys.includes(preferred) ? preferred : monthKeys[0];
+  return monthFilter.value;
 }
 
-function monthSummary(monthKey) {
-  const monthTransactions = transactions.filter((transaction) => transaction.date.startsWith(monthKey));
-  const incomeItems = monthTransactions.filter((transaction) => transaction.type === "income");
-  const expenseItems = monthTransactions.filter((transaction) => transaction.type === "expense");
-  const incomeCents = incomeItems.reduce((sum, transaction) => sum + transaction.amountCents, 0);
-  const spendingCents = expenseItems.reduce((sum, transaction) => sum + transaction.amountCents, 0);
-
-  return {
-    monthTransactions,
-    incomeItems,
-    expenseItems,
-    incomeCents,
-    spendingCents,
-    netCents: incomeCents - spendingCents
-  };
+function summaryFor(key) {
+  const items = transactions.filter((item) => item.date.startsWith(key));
+  const incomeItems = items.filter((item) => item.type === "income");
+  const expenseItems = items.filter((item) => item.type === "expense");
+  const income = incomeItems.reduce((sum, item) => sum + item.amountCents, 0);
+  const spending = expenseItems.reduce((sum, item) => sum + item.amountCents, 0);
+  return { items, incomeItems, expenseItems, income, spending, net: income - spending };
 }
 
-function getPreviousMonth(monthKey) {
-  const monthIndex = monthKeys.indexOf(monthKey);
-  return monthKeys[monthIndex + 1] || null;
-}
-
-function comparisonText(currentCents, previousCents, previousMonth) {
-  if (previousCents === null) {
-    return { text: "No earlier month", className: "no-history" };
-  }
-  if (previousCents === 0) {
-    return { text: "No earlier total", className: "no-history" };
-  }
-
-  const change = ((currentCents - previousCents) / Math.abs(previousCents)) * 100;
+function comparison(current, previous, previousMonth) {
+  if (previous === null) return { text: "No earlier month", className: "no-history" };
+  if (previous === 0) return { text: "No earlier total", className: "no-history" };
+  const change = (current - previous) / Math.abs(previous) * 100;
   const magnitude = Math.abs(change) < 0.05 ? "0.0" : Math.abs(change).toFixed(1);
-  const direction = change > 0 ? "+" : change < 0 ? "−" : "";
-  const previousLabel = formatMonth(previousMonth).split(" ")[0];
-  return { text: direction + magnitude + "% vs " + previousLabel, className: "" };
+  const sign = change > 0 ? "+" : change < 0 ? "−" : "";
+  return { text: sign + magnitude + "% vs " + formatMonth(previousMonth).split(" ")[0], className: "" };
 }
 
-function setText(selector, text) {
-  const element = document.querySelector(selector);
-  if (element) element.textContent = text;
-}
-
-function categorySlug(category) {
-  return category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
-
-function renderCategories(summary, monthKey) {
-  setText("#category-month", formatMonth(monthKey));
-  setText("#category-total", formatMoney(summary.spendingCents));
-
-  const totalsByCategory = new Map();
-  summary.expenseItems.forEach((transaction) => {
-    const current = totalsByCategory.get(transaction.category) || 0;
-    totalsByCategory.set(transaction.category, current + transaction.amountCents);
-  });
-
-  const categories = [...totalsByCategory.entries()].sort((left, right) => right[1] - left[1]);
+function renderCategories(summary, month) {
+  setText("#category-month", formatMonth(month));
+  setText("#category-total", formatMoney(summary.spending));
+  const totals = new Map();
+  summary.expenseItems.forEach((item) => totals.set(item.category, (totals.get(item.category) || 0) + item.amountCents));
+  const categories = [...totals.entries()].sort((a, b) => b[1] - a[1]);
   const list = document.querySelector("#category-list");
-
-  if (categories.length === 0) {
+  if (!categories.length) {
     list.innerHTML = '<p class="empty-row">No expenses recorded for this month.</p>';
     return;
   }
-
-  list.innerHTML = categories.map(([category, amountCents]) => {
-    const share = summary.spendingCents > 0 ? (amountCents / summary.spendingCents) * 100 : 0;
-    const safeCategory = escapeHtml(category);
-    const slug = categorySlug(category);
+  list.innerHTML = categories.map(([name, cents]) => {
+    const share = summary.spending ? cents / summary.spending * 100 : 0;
+    const safeName = escapeHtml(name);
+    const slug = categorySlug(name);
     return '<div class="category-item">' +
-      '<span class="category-name"><span class="category-dot category-' + slug + '" aria-hidden="true"></span>' + safeCategory + '</span>' +
+      '<span class="category-name"><span class="category-dot category-' + slug + '" aria-hidden="true"></span>' + safeName + '</span>' +
       '<span class="category-track" aria-hidden="true"><span class="category-fill category-' + slug + '" style="width: ' + share.toFixed(1) + '%"></span></span>' +
-      '<span class="category-amount"><span>' + formatMoney(amountCents) + '</span><small>' + share.toFixed(1) + '%</small></span>' +
-      '</div>';
+      '<span class="category-amount"><span>' + formatMoney(cents) + '</span><small>' + share.toFixed(1) + '%</small></span></div>';
   }).join("");
 }
 
 function renderTransactions(summary) {
   const rows = document.querySelector("#transaction-rows");
-  const recent = [...summary.monthTransactions]
-    .sort((left, right) => right.date.localeCompare(left.date))
-    .slice(0, 8);
-
-  setText("#transaction-count", summary.monthTransactions.length + " entries");
-
-  if (recent.length === 0) {
-    rows.innerHTML = '<tr><td colspan="4" class="empty-row">No transactions recorded for this month.</td></tr>';
+  const items = [...summary.items].sort((a, b) => b.date.localeCompare(a.date));
+  setText("#transaction-count", items.length + " entries");
+  if (!items.length) {
+    rows.innerHTML = '<tr><td colspan="5" class="empty-row">No transactions recorded for this month.</td></tr>';
     return;
   }
-
-  rows.innerHTML = recent.map((transaction) => {
-    const isIncome = transaction.type === "income";
-    const sign = isIncome ? "+" : "−";
-    const category = escapeHtml(transaction.category);
-    const description = escapeHtml(transaction.description);
-    const merchant = escapeHtml(transaction.merchant);
-    const marker = escapeHtml(transaction.category.slice(0, 1));
-    const amountClass = isIncome ? "income" : "expense";
-
-    return '<tr>' +
-      '<td><div class="transaction-primary">' +
-      '<span class="category-symbol category-' + categorySlug(transaction.category) + '" aria-hidden="true">' + marker + '</span>' +
-      '<span class="transaction-name"><strong>' + description + '</strong><span>' + merchant + '</span></span>' +
-      '</div></td>' +
-      '<td><span class="category-label">' + category + '</span></td>' +
-      '<td class="date-cell">' + formatDate(transaction.date) + '</td>' +
-      '<td class="amount-cell ' + amountClass + '">' + sign + formatMoney(transaction.amountCents) + '</td>' +
-      '</tr>';
+  rows.innerHTML = items.map((item) => {
+    const name = escapeHtml(item.description);
+    const category = escapeHtml(item.category);
+    const merchant = escapeHtml(item.merchant);
+    const id = escapeHtml(item.id);
+    const income = item.type === "income";
+    return '<tr><td><div class="transaction-primary"><span class="category-symbol category-' + categorySlug(item.category) + '" aria-hidden="true">' +
+      escapeHtml(item.category.slice(0, 1)) + '</span><span class="transaction-name"><strong>' + name + '</strong>' +
+      (merchant ? '<span>' + merchant + '</span>' : '') + '</span></div></td>' +
+      '<td><span class="category-label">' + category + '</span></td><td class="date-cell">' + formatDate(item.date) + '</td>' +
+      '<td class="amount-cell ' + (income ? "income" : "expense") + '">' + (income ? "+" : "−") + formatMoney(item.amountCents) + '</td>' +
+      '<td class="transaction-actions"><button type="button" class="row-action" data-action="edit" data-id="' + id + '" aria-label="Edit ' + name + '">Edit</button>' +
+      '<button type="button" class="row-action delete-action" data-action="delete" data-id="' + id + '" aria-label="Delete ' + name + '">Delete</button></td></tr>';
   }).join("");
 }
 
-function renderDashboard(monthKey) {
-  const summary = monthSummary(monthKey);
-  const previousMonth = getPreviousMonth(monthKey);
-  const previousSummary = previousMonth ? monthSummary(previousMonth) : null;
-
-  setText("#income-total", formatMoney(summary.incomeCents));
-  setText("#spending-total", formatMoney(summary.spendingCents));
-  setText("#net-total", formatMoney(summary.netCents));
-
-  const netElement = document.querySelector("#net-total");
-  netElement.classList.toggle("is-negative", summary.netCents < 0);
-
+function renderDashboard(key) {
+  const summary = summaryFor(key);
+  const previousMonth = monthKeys[monthKeys.indexOf(key) + 1] || null;
+  const previous = previousMonth ? summaryFor(previousMonth) : null;
+  setText("#income-total", formatMoney(summary.income));
+  setText("#spending-total", formatMoney(summary.spending));
+  setText("#net-total", formatMoney(summary.net));
+  document.querySelector("#net-total").classList.toggle("is-negative", summary.net < 0);
   const comparisons = [
-    comparisonText(summary.incomeCents, previousSummary ? previousSummary.incomeCents : null, previousMonth),
-    comparisonText(summary.spendingCents, previousSummary ? previousSummary.spendingCents : null, previousMonth),
-    comparisonText(summary.netCents, previousSummary ? previousSummary.netCents : null, previousMonth)
+    comparison(summary.income, previous ? previous.income : null, previousMonth),
+    comparison(summary.spending, previous ? previous.spending : null, previousMonth),
+    comparison(summary.net, previous ? previous.net : null, previousMonth)
   ];
   ["#income-change", "#spending-change", "#net-change"].forEach((selector, index) => {
     const element = document.querySelector(selector);
     element.textContent = comparisons[index].text;
     element.className = "trend-chip " + comparisons[index].className;
   });
-
   setText("#income-detail", summary.incomeItems.length + " income entries");
   setText("#spending-detail", summary.expenseItems.length + " expense entries");
-
-  if (summary.incomeCents > 0) {
-    const savingsRate = (summary.netCents / summary.incomeCents) * 100;
-    setText("#net-detail", savingsRate.toFixed(1) + "% of income left after spending");
-  } else {
-    setText("#net-detail", "No income entries recorded");
-  }
-
-  renderCategories(summary, monthKey);
+  setText("#net-detail", summary.income ? (summary.net / summary.income * 100).toFixed(1) + "% of income left after spending" : "No income entries recorded");
+  renderCategories(summary, key);
   renderTransactions(summary);
-  document.title = "SaldoSpiegel — " + formatMonth(monthKey);
+  document.title = "SaldoSpiegel — " + formatMonth(key);
 }
 
-monthKeys.forEach((monthKey) => {
-  const option = document.createElement("option");
-  option.value = monthKey;
-  option.textContent = formatMonth(monthKey);
-  monthFilter.append(option);
-});
-
-monthFilter.value = monthKeys[0] || "";
-monthFilter.addEventListener("change", (event) => {
-  renderDashboard(event.currentTarget.value);
-});
-
-if (monthKeys.length > 0) {
-  renderDashboard(monthKeys[0]);
+function updateCategories(selected) {
+  categoryField.replaceChildren();
+  CATEGORIES[typeField.value].forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    categoryField.append(option);
+  });
+  categoryField.value = CATEGORIES[typeField.value].includes(selected) ? selected : CATEGORIES[typeField.value][0];
 }
+
+function openForm(item) {
+  form.reset();
+  amountField.setCustomValidity("");
+  dateField.setCustomValidity("");
+  document.querySelector("#transaction-description").setCustomValidity("");
+  editingId = item ? item.id : null;
+  setText("#transaction-form-title", item ? "Edit transaction" : "Add transaction");
+  setText("#transaction-form-description", item ? "Update the details below." : "Enter the details for this transaction.");
+  typeField.value = item ? item.type : "expense";
+  updateCategories(item ? item.category : "Groceries");
+  const today = new Date();
+  dateField.value = item ? item.date : today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+  document.querySelector("#transaction-description").value = item ? item.description : "";
+  document.querySelector("#transaction-merchant").value = item ? item.merchant : "";
+  amountField.value = item ? Math.floor(item.amountCents / 100) + "." + String(item.amountCents % 100).padStart(2, "0") : "";
+  dialog.showModal();
+  document.querySelector("#transaction-description").focus();
+}
+
+function parseAmount(value) {
+  const match = value.trim().match(/^(\d+)(?:[.,](\d{1,2}))?$/);
+  if (!match) return null;
+  const cents = Number(match[1]) * 100 + Number((match[2] || "").padEnd(2, "0"));
+  return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
+}
+
+function applyChanges(next, month, message) {
+  transactions = next;
+  renderDashboard(refreshMonthOptions(month));
+  if (saveTransactions()) status(message + " Saved in this browser.");
+  else status("The browser could not save this change. It will be lost when this tab closes.");
+}
+
+monthFilter.addEventListener("change", (event) => renderDashboard(event.currentTarget.value));
+document.querySelector("#add-transaction").addEventListener("click", () => openForm(null));
+typeField.addEventListener("change", () => updateCategories(null));
+amountField.addEventListener("input", () => amountField.setCustomValidity(""));
+document.querySelector("#transaction-description").addEventListener("input", (event) => event.currentTarget.setCustomValidity(""));
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const cents = parseAmount(amountField.value);
+  if (cents === null) {
+    amountField.setCustomValidity("Enter a positive amount with no more than two decimal places.");
+    amountField.reportValidity();
+    return;
+  }
+  amountField.setCustomValidity("");
+  const date = dateField.value;
+  const descriptionField = document.querySelector("#transaction-description");
+  const description = descriptionField.value.trim();
+  if (!description) {
+    descriptionField.setCustomValidity("Enter a description.");
+    descriptionField.reportValidity();
+    return;
+  }
+  descriptionField.setCustomValidity("");
+  if (!validDate(date)) {
+    dateField.setCustomValidity("Choose a valid date.");
+    dateField.reportValidity();
+    return;
+  }
+  dateField.setCustomValidity("");
+  const item = {
+    id: editingId || (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : "transaction-" + Date.now()),
+    date,
+    description,
+    merchant: document.querySelector("#transaction-merchant").value.trim(),
+    category: categoryField.value,
+    type: typeField.value,
+    amountCents: cents
+  };
+  const next = editingId ? transactions.map((existing) => existing.id === editingId ? item : existing) : [...transactions, item];
+  applyChanges(next, date.slice(0, 7), editingId ? "Transaction updated." : "Transaction added.");
+  dialog.close();
+});
+
+document.querySelector("#close-transaction-dialog").addEventListener("click", () => dialog.close());
+document.querySelector("#cancel-transaction").addEventListener("click", () => dialog.close());
+dialog.addEventListener("click", (event) => {
+  if (event.target === dialog) dialog.close();
+});
+
+document.querySelector("#transaction-rows").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  const item = transactions.find((transaction) => transaction.id === button.dataset.id);
+  if (!item) return;
+  if (button.dataset.action === "edit") {
+    openForm(item);
+  } else if (window.confirm("Delete \"" + item.description + "\"? This change cannot be undone.")) {
+    applyChanges(transactions.filter((transaction) => transaction.id !== item.id), monthFilter.value, "Transaction deleted.");
+  }
+});
+
+renderDashboard(refreshMonthOptions(null));
+if (initialData.warning) status(initialData.warning);
+else if (initialData.loaded) status("Your saved transactions are loaded from this browser.");
+else status("Sample transactions are shown. Your changes will be saved in this browser.");
+
+
