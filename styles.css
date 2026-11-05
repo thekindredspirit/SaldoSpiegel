@@ -245,3 +245,26 @@ button { cursor: pointer; }
   .form-grid { grid-template-columns: 1fr; }
   .form-field-wide { grid-column: auto; }
 }
+
+/* Transaction search and filters */
+.transaction-filters { display: grid; grid-template-columns: minmax(150px, 1.3fr) minmax(120px, .75fr) minmax(100px, .65fr) auto; gap: 7px; margin-top: 15px; }
+.transaction-filters input, .transaction-filters select { width: 100%; min-width: 0; height: 35px; padding: 0 9px; border: 1px solid #e1e7e1; border-radius: 7px; outline: 0; color: #394a42; background: #fff; font-size: 10px; }
+.transaction-filters input::placeholder { color: #98a39c; }
+.transaction-filters input:focus, .transaction-filters select:focus { border-color: #5a9f83; box-shadow: 0 0 0 3px rgba(32,133,107,.12); }
+.clear-filters-button { min-height: 35px; padding: 0 9px; border: 1px solid #e1e7e1; border-radius: 7px; color: #53635c; background: #fff; font-size: 10px; font-weight: 600; }
+.clear-filters-button:hover { background: #f5f7f4; }
+.clear-filters-button:focus-visible { outline: 3px solid rgba(32,133,107,.24); outline-offset: 2px; }
+.clear-filters-button[hidden] { display: none; }
+.filter-help { margin: 7px 0 0; color: #929c96; font-size: 9px; line-height: 1.4; }
+
+@media (max-width: 1120px) {
+  .transaction-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .transaction-filters input { grid-column: 1 / -1; }
+  .clear-filters-button { justify-self: start; }
+}
+@media (max-width: 650px) {
+  .transaction-filters { gap: 7px; margin-top: 13px; }
+  .transaction-filters input, .transaction-filters select { height: 37px; }
+  .clear-filters-button { min-height: 37px; }
+  .filter-help { font-size: 9px; }
+}

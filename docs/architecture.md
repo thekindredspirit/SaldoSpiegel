@@ -9,7 +9,7 @@ SaldoSpiegel is a static browser application. It has no backend, database, build
 - index.html contains the dashboard, transaction form, and accessible labels.
 - styles.css contains the visual styles, responsive layout, focus states, and reduced-motion handling.
 - src/data.js exports the fictional sample transaction list.
-- src/app.js loads saved transactions when available, calculates selected-month totals, updates the month selector, renders the category breakdown and transaction list, and handles transaction changes.
+- src/app.js loads saved transactions when available, calculates selected-month totals, updates the month selector, renders the category breakdown and transaction list, applies list filters, and handles transaction changes.
 
 ## Transaction data
 
@@ -30,3 +30,7 @@ Category shares are each category's expense total divided by total spending for 
 ## Interface updates
 
 The month selector is rebuilt after a transaction change so a new date can become the selected month. Summary cards, category totals, and transaction rows are then rendered from the current in-memory list. Changes are written to local storage after the interface state is updated. A storage error is reported to the user and the current tab continues to show the in-memory change.
+
+Search matches transaction descriptions and merchants. Category and type filters apply only to the transaction
+table; monthly summaries and category totals continue to use every transaction in the selected month. Filter settings
+last for the current page view and are not saved.

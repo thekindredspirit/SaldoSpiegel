@@ -6,7 +6,7 @@ The app runs in a browser and does not connect to a bank. Transactions you add a
 
 ## Current milestone
 
-**Manual transaction management (v0.2.0)**
+**Transaction search and filters (v0.3.0)**
 
 This milestone builds on the dashboard foundation with:
 
@@ -14,6 +14,8 @@ This milestone builds on the dashboard foundation with:
 - Spending totals and shares grouped by category.
 - Month-to-month comparisons when an earlier month is available.
 - A month selector and a full transaction list for the selected month.
+- Search by description or merchant, and filter the list by category or transaction type.
+- A result count, a clear-filters button, and separate empty messages for empty months and unmatched filters.
 - Forms to add and edit income or expense transactions, and remove entries.
 - Browser storage for transactions after the first change.
 - Responsive layout and visible keyboard focus states.
@@ -35,6 +37,9 @@ No package installation or build step is needed.
 Choose a month near the page heading to review its transactions. Use **Add transaction** to enter an income or expense. Existing entries can be edited or deleted from the table.
 
 Enter a positive amount in euros, using either a dot or comma and up to two decimal places. An entry's type determines whether the amount contributes to income or spending. Monthly net is calculated as income minus spending; it is not a bank account balance. Category shares are calculated from that month's expenses.
+
+In the transaction panel, search by description or merchant, then filter by category or type. These controls narrow
+the table only; monthly cards and the category breakdown continue to use every transaction in the selected month.
 
 Amounts are kept as integer euro cents to avoid common floating-point rounding errors. The dashboard currently uses one currency and a fixed set of categories.
 
@@ -59,6 +64,7 @@ Do not use real personal financial information in screenshots, sample files, or 
 - There is no export or restore workflow for saved transactions.
 - Data is stored in one browser profile and is not encrypted.
 - Categories and currency are fixed to the options in the form.
+- Search and filter settings are temporary and reset when the page is reloaded.
 - The dashboard is a personal record-keeping tool, not financial advice or a bank balance tracker.
 
 ## License

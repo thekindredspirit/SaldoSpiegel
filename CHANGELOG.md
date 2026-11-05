@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.0
+
+- Add search by description or merchant, plus category and transaction type filters.
+- Show the filtered result count and provide a clear-filters control with helpful empty states.
+- Keep monthly summaries and category totals based on all transactions in the selected month.
+
 ## v0.2.0
 
 - Add forms to create and edit income and expense transactions, and remove existing entries.

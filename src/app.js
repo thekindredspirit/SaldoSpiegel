@@ -17,6 +17,10 @@ const typeField = document.querySelector("#transaction-type");
 const categoryField = document.querySelector("#transaction-category");
 const dateField = document.querySelector("#transaction-date");
 const amountField = document.querySelector("#transaction-amount");
+const searchField = document.querySelector("#transaction-search");
+const categoryFilter = document.querySelector("#transaction-category-filter");
+const typeFilter = document.querySelector("#transaction-type-filter");
+const clearFiltersButton = document.querySelector("#clear-transaction-filters");
 let editingId = null;
 let monthKeys = [];
 
@@ -161,14 +165,54 @@ function renderCategories(summary, month) {
   }).join("");
 }
 
+function hasActiveTransactionFilters() {
+  return Boolean(searchField.value.trim() || categoryFilter.value || typeFilter.value);
+}
+
+function filterTransactions(items) {
+  const query = searchField.value.trim().toLocaleLowerCase();
+  return items.filter((item) => {
+    const searchableText = (item.description + " " + item.merchant).toLocaleLowerCase();
+    const matchesSearch = !query || searchableText.includes(query);
+    const matchesCategory = !categoryFilter.value || item.category === categoryFilter.value;
+    const matchesType = !typeFilter.value || item.type === typeFilter.value;
+    return matchesSearch && matchesCategory && matchesType;
+  });
+}
+
+function populateTransactionCategoryFilter() {
+  categoryFilter.replaceChildren();
+  const allOption = document.createElement("option");
+  allOption.value = "";
+  allOption.textContent = "All categories";
+  categoryFilter.append(allOption);
+
+  [...EXPENSE_CATEGORIES, "Income"].forEach((category) => {
+    const option = document.createElement("option");
+    option.value = category;
+    option.textContent = category;
+    categoryFilter.append(option);
+  });
+}
+
 function renderTransactions(summary) {
   const rows = document.querySelector("#transaction-rows");
-  const items = [...summary.items].sort((a, b) => b.date.localeCompare(a.date));
-  setText("#transaction-count", items.length + " entries");
+  const activeFilters = hasActiveTransactionFilters();
+  const items = filterTransactions(summary.items).sort((a, b) => b.date.localeCompare(a.date));
+  const entryLabel = summary.items.length === 1 ? "entry" : "entries";
+  setText("#transaction-count", activeFilters
+    ? items.length + " of " + summary.items.length + " " + entryLabel
+    : summary.items.length + " " + entryLabel);
+  clearFiltersButton.hidden = !activeFilters;
+
   if (!items.length) {
-    rows.innerHTML = '<tr><td colspan="5" class="empty-row">No transactions recorded for this month.</td></tr>';
+    const message = summary.items.length
+      ? "No transactions match these filters. Try changing or clearing them."
+      : "No transactions recorded for this month.";
+    rows.innerHTML = '<tr><td colspan="5" class="empty-row">' + message + '</td></tr>';
     return;
   }
+
   rows.innerHTML = items.map((item) => {
     const name = escapeHtml(item.description);
     const category = escapeHtml(item.category);
@@ -256,6 +300,17 @@ function applyChanges(next, month, message) {
 }
 
 monthFilter.addEventListener("change", (event) => renderDashboard(event.currentTarget.value));
+const renderCurrentMonthTransactions = () => renderTransactions(summaryFor(monthFilter.value));
+searchField.addEventListener("input", renderCurrentMonthTransactions);
+categoryFilter.addEventListener("change", renderCurrentMonthTransactions);
+typeFilter.addEventListener("change", renderCurrentMonthTransactions);
+clearFiltersButton.addEventListener("click", () => {
+  searchField.value = "";
+  categoryFilter.value = "";
+  typeFilter.value = "";
+  renderCurrentMonthTransactions();
+  searchField.focus();
+});
 document.querySelector("#add-transaction").addEventListener("click", () => openForm(null));
 typeField.addEventListener("change", () => updateCategories(null));
 amountField.addEventListener("input", () => amountField.setCustomValidity(""));
@@ -317,9 +372,8 @@ document.querySelector("#transaction-rows").addEventListener("click", (event) =>
   }
 });
 
+populateTransactionCategoryFilter();
 renderDashboard(refreshMonthOptions(null));
 if (initialData.warning) status(initialData.warning);
 else if (initialData.loaded) status("Your saved transactions are loaded from this browser.");
 else status("Sample transactions are shown. Your changes will be saved in this browser.");
-
-
