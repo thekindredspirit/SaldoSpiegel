@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.0
+
+- Download a versioned JSON backup of the current transaction list.
+- Validate a selected backup and preview its entry count before restoring.
+- Require confirmation before replacing the current list with a backup.
+- Document local backup handling and the replacement behavior.
+
 ## v0.3.0
 
 - Add search by description or merchant, plus category and transaction type filters.

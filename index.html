@@ -80,6 +80,31 @@
           </article>
         </section>
 
+        <section class="panel backup-panel" aria-labelledby="backup-title">
+          <div class="panel-heading">
+            <div><p class="eyebrow">YOUR LOCAL DATA</p><h2 id="backup-title">Backup and restore</h2></div>
+          </div>
+          <p class="backup-description">Download a JSON copy of your transactions, or choose a SaldoSpiegel backup to restore.</p>
+          <div class="backup-actions">
+            <button type="button" class="secondary-button" id="download-backup">Download JSON backup</button>
+            <input class="visually-hidden" id="backup-file" type="file" accept=".json,application/json" aria-describedby="backup-help">
+            <label class="secondary-button backup-file-label" for="backup-file">Choose backup file</label>
+          </div>
+          <p class="backup-help" id="backup-help">Backups contain transaction details and are not encrypted. Keep the file somewhere private. Restoring replaces the current transaction list.</p>
+          <p class="backup-message" id="backup-message" role="status" aria-live="polite"></p>
+          <section class="backup-review" id="backup-review" aria-labelledby="backup-review-title" hidden>
+            <div>
+              <h3 id="backup-review-title">Backup ready to restore</h3>
+              <p class="backup-review-name" id="backup-review-name"></p>
+              <p id="backup-review-summary"></p>
+            </div>
+            <div class="backup-review-actions">
+              <button type="button" class="secondary-button" id="discard-backup">Cancel</button>
+              <button type="button" class="primary-button" id="restore-backup" disabled>Restore backup</button>
+            </div>
+          </section>
+        </section>
+
         <footer class="page-footer"><span><span class="footer-mark" aria-hidden="true">S</span> SaldoSpiegel</span><span>Browser-local data · Fictional sample entries</span></footer>
       </div>
     </main>

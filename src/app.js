@@ -1,6 +1,8 @@
 import { transactions as sampleTransactions } from "./data.js";
 
 const STORAGE_KEY = "saldospiegel.transactions.v1";
+const BACKUP_FORMAT = "saldospiegel-backup";
+const BACKUP_VERSION = 1;
 const EXPENSE_CATEGORIES = [
   "Housing", "Groceries", "Transport", "Utilities", "Dining", "Education",
   "Subscriptions", "Health", "Leisure", "Shopping", "Fitness"
@@ -21,8 +23,12 @@ const searchField = document.querySelector("#transaction-search");
 const categoryFilter = document.querySelector("#transaction-category-filter");
 const typeFilter = document.querySelector("#transaction-type-filter");
 const clearFiltersButton = document.querySelector("#clear-transaction-filters");
+const backupFileField = document.querySelector("#backup-file");
+const backupReview = document.querySelector("#backup-review");
+const restoreBackupButton = document.querySelector("#restore-backup");
 let editingId = null;
 let monthKeys = [];
+let pendingBackup = null;
 
 function validDate(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -40,6 +46,32 @@ function validTransaction(item) {
     Number.isSafeInteger(item.amountCents) && item.amountCents > 0;
 }
 
+function validTransactionList(items) {
+  if (!Array.isArray(items)) return false;
+  const ids = new Set();
+  return items.every((item) => {
+    if (!validTransaction(item) || ids.has(item.id)) return false;
+    ids.add(item.id);
+    return true;
+  });
+}
+
+function copyTransaction(item) {
+  return {
+    id: item.id,
+    date: item.date,
+    description: item.description,
+    merchant: item.merchant,
+    category: item.category,
+    type: item.type,
+    amountCents: item.amountCents
+  };
+}
+
+function transactionWord(count) {
+  return count === 1 ? "entry" : "entries";
+}
+
 function loadSavedTransactions() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -47,12 +79,7 @@ function loadSavedTransactions() {
       return { items: sampleTransactions.map((item) => ({ ...item })), loaded: false, warning: "" };
     }
     const items = JSON.parse(saved);
-    const ids = new Set();
-    if (!Array.isArray(items) || !items.every((item) => {
-      if (!validTransaction(item) || ids.has(item.id)) return false;
-      ids.add(item.id);
-      return true;
-    })) throw new Error("Invalid saved data");
+    if (!validTransactionList(items)) throw new Error("Invalid saved data");
     return { items, loaded: true, warning: "" };
   } catch (error) {
     const warning = error instanceof SyntaxError || error.message === "Invalid saved data"
@@ -102,6 +129,10 @@ function setText(selector, value) {
 
 function status(message) {
   setText("#app-status", message);
+}
+
+function backupStatus(message) {
+  setText("#backup-message", message);
 }
 
 function thisMonth() {
@@ -199,7 +230,7 @@ function renderTransactions(summary) {
   const rows = document.querySelector("#transaction-rows");
   const activeFilters = hasActiveTransactionFilters();
   const items = filterTransactions(summary.items).sort((a, b) => b.date.localeCompare(a.date));
-  const entryLabel = summary.items.length === 1 ? "entry" : "entries";
+  const entryLabel = transactionWord(summary.items.length);
   setText("#transaction-count", activeFilters
     ? items.length + " of " + summary.items.length + " " + entryLabel
     : summary.items.length + " " + entryLabel);
@@ -292,11 +323,107 @@ function parseAmount(value) {
   return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
 }
 
-function applyChanges(next, month, message) {
+function applyChanges(next, month, message, reportStatus = status) {
   transactions = next;
   renderDashboard(refreshMonthOptions(month));
-  if (saveTransactions()) status(message + " Saved in this browser.");
-  else status("The browser could not save this change. It will be lost when this tab closes.");
+  if (saveTransactions()) reportStatus(message + " Saved in this browser.");
+  else reportStatus("The browser could not save this change. It will be lost when this tab closes.");
+}
+
+function clearTransactionFilters() {
+  searchField.value = "";
+  categoryFilter.value = "";
+  typeFilter.value = "";
+}
+
+function backupFileDate() {
+  const date = new Date();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return [date.getFullYear(), month, day].join("-");
+}
+
+function downloadBackup() {
+  const backup = {
+    format: BACKUP_FORMAT,
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    transactions: transactions.map(copyTransaction)
+  };
+  const file = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "saldospiegel-backup-" + backupFileDate() + ".json";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  backupStatus("Backup download started with " + transactions.length + " transaction " + transactionWord(transactions.length) + ". Keep the file somewhere private.");
+}
+
+function clearBackupReview() {
+  pendingBackup = null;
+  backupReview.hidden = true;
+  setText("#backup-review-name", "");
+  setText("#backup-review-summary", "");
+  restoreBackupButton.disabled = true;
+}
+
+async function reviewBackupFile(file) {
+  clearBackupReview();
+  backupStatus("");
+  if (!file) return;
+
+  let backup;
+  try {
+    backup = JSON.parse(await file.text());
+  } catch {
+    backupStatus("The selected file could not be read as JSON.");
+    return;
+  } finally {
+    backupFileField.value = "";
+  }
+
+  if (!backup || backup.format !== BACKUP_FORMAT || backup.version !== BACKUP_VERSION) {
+    backupStatus("This is not a supported SaldoSpiegel backup file.");
+    return;
+  }
+  if (!validTransactionList(backup.transactions)) {
+    backupStatus("The backup contains invalid or duplicate transaction entries.");
+    return;
+  }
+
+  pendingBackup = backup.transactions.map(copyTransaction);
+  const backupCount = pendingBackup.length;
+  const currentCount = transactions.length;
+  const backupLabel = transactionWord(backupCount);
+  const currentLabel = transactionWord(currentCount);
+  setText("#backup-review-name", file.name);
+  setText("#backup-review-summary", "This backup has " + backupCount + " " + backupLabel + ". Restoring it will replace your current list of " + currentCount + " " + currentLabel + ".");
+  backupReview.hidden = false;
+  restoreBackupButton.disabled = false;
+  backupStatus("Backup checked. Review the replacement details before restoring it.");
+}
+
+function restoreBackup() {
+  if (!pendingBackup) return;
+  const backupCount = pendingBackup.length;
+  const currentCount = transactions.length;
+  const backupLabel = transactionWord(backupCount);
+  const currentLabel = transactionWord(currentCount);
+  const confirmed = window.confirm("Restore " + backupCount + " " + backupLabel + "? This will replace all " + currentCount + " current " + currentLabel + ".");
+  if (!confirmed) return;
+
+  const restored = pendingBackup.map(copyTransaction);
+  const latestMonth = restored.reduce((latest, item) => {
+    const month = item.date.slice(0, 7);
+    return month > latest ? month : latest;
+  }, "") || null;
+  clearBackupReview();
+  clearTransactionFilters();
+  applyChanges(restored, latestMonth, "Backup restored.", backupStatus);
+  document.querySelector("#download-backup").focus();
 }
 
 monthFilter.addEventListener("change", (event) => renderDashboard(event.currentTarget.value));
@@ -305,12 +432,18 @@ searchField.addEventListener("input", renderCurrentMonthTransactions);
 categoryFilter.addEventListener("change", renderCurrentMonthTransactions);
 typeFilter.addEventListener("change", renderCurrentMonthTransactions);
 clearFiltersButton.addEventListener("click", () => {
-  searchField.value = "";
-  categoryFilter.value = "";
-  typeFilter.value = "";
+  clearTransactionFilters();
   renderCurrentMonthTransactions();
   searchField.focus();
 });
+document.querySelector("#download-backup").addEventListener("click", downloadBackup);
+backupFileField.addEventListener("change", (event) => reviewBackupFile(event.currentTarget.files[0]));
+document.querySelector("#discard-backup").addEventListener("click", () => {
+  clearBackupReview();
+  backupStatus("Backup selection cleared. Your current transactions were not changed.");
+  backupFileField.focus();
+});
+restoreBackupButton.addEventListener("click", restoreBackup);
 document.querySelector("#add-transaction").addEventListener("click", () => openForm(null));
 typeField.addEventListener("change", () => updateCategories(null));
 amountField.addEventListener("input", () => amountField.setCustomValidity(""));
