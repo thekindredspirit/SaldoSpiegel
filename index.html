@@ -80,6 +80,18 @@
           </article>
         </section>
 
+        <section class="panel budget-panel" aria-labelledby="budget-title">
+          <div class="panel-heading"><div><p class="eyebrow">MONTHLY PLAN</p><h2 id="budget-title">Category budgets</h2></div><span class="panel-total" id="budget-month-label">—</span></div>
+          <p class="budget-description">Set a monthly limit for an expense category and compare it with recorded spending.</p>
+          <form id="budget-form" class="budget-form">
+            <label class="form-field" for="budget-category"><span>Category</span><select id="budget-category" required></select></label>
+            <label class="form-field" for="budget-amount"><span>Monthly limit (€)</span><input id="budget-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" pattern="[0-9]+([.,][0-9]{1,2})?" title="Enter euros and up to two decimal places" required></label>
+            <button type="submit" class="primary-button">Save budget</button>
+          </form>
+          <div id="budget-list" class="budget-list" aria-live="polite"></div>
+          <p class="budget-note">Budgets are saved in this browser separately from transactions. They are not included in transaction backup files.</p>
+        </section>
+
         <section class="panel backup-panel" aria-labelledby="backup-title">
           <div class="panel-heading">
             <div><p class="eyebrow">YOUR LOCAL DATA</p><h2 id="backup-title">Backup and restore</h2></div>

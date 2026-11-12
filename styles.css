@@ -287,3 +287,33 @@ button { cursor: pointer; }
   .backup-review { align-items: stretch; flex-direction: column; }
   .backup-review-actions { justify-content: flex-start; }
 }
+
+
+/* Monthly category budgets */
+.budget-panel { margin-top: 17px; }
+.budget-description { margin: 10px 0 15px; color: #77857d; font-size: 11px; line-height: 1.5; }
+.budget-form { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(150px, .8fr) auto; gap: 10px; align-items: end; padding-bottom: 17px; border-bottom: 1px solid #edf0ec; }
+.budget-form .form-field input, .budget-form .form-field select { height: 38px; }
+.budget-form .primary-button { white-space: nowrap; }
+.budget-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; padding-top: 16px; }
+.budget-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "heading heading" "track track" "foot remove"; align-items: center; gap: 8px; padding: 13px; border: 1px solid #e9ede8; border-radius: 9px; background: #fbfcfa; }
+.budget-item-heading { grid-area: heading; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; color: #35463e; font-size: 11px; }
+.budget-item-heading strong { font-weight: 650; }
+.budget-amounts { color: #53635c; font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.budget-track { grid-area: track; height: 7px; overflow: hidden; border-radius: 8px; background: #edf1ec; }
+.budget-fill { display: block; height: 100%; border-radius: inherit; background: #6fa88b; }
+.budget-fill.over { background: #c87968; }
+.budget-item-foot { grid-area: foot; color: #87938d; font-size: 9px; }
+.budget-remove { grid-area: remove; justify-self: end; padding: 3px 0 3px 6px; border: 0; color: #718078; background: transparent; font-size: 9px; cursor: pointer; }
+.budget-remove:hover { color: #a55d50; text-decoration: underline; }
+.budget-remove:focus-visible { outline: 3px solid rgba(32,133,107,.24); outline-offset: 2px; border-radius: 3px; }
+.budget-empty { margin: 0; padding: 14px 0 0; color: #929c96; font-size: 10px; }
+.budget-note { margin: 13px 0 0; color: #929c96; font-size: 9px; line-height: 1.5; }
+@media (max-width: 650px) {
+  .budget-form { grid-template-columns: 1fr 1fr; gap: 9px; }
+  .budget-form .primary-button { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 420px) {
+  .budget-form { grid-template-columns: 1fr; }
+  .budget-form .primary-button { grid-column: auto; }
+}

@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.0
+
+- Add monthly spending limits for expense categories, with progress and over-budget amounts.
+- Save budgets by month in browser storage, separately from transaction data.
+
 ## v0.4.0
 
 - Download a versioned JSON backup of the current transaction list.

@@ -1,4 +1,5 @@
 import { transactions as sampleTransactions } from "./data.js";
+import { initBudgets } from "./budgets.js";
 
 const STORAGE_KEY = "saldospiegel.transactions.v1";
 const BACKUP_FORMAT = "saldospiegel-backup";
@@ -91,6 +92,7 @@ function loadSavedTransactions() {
 
 const initialData = loadSavedTransactions();
 let transactions = initialData.items;
+const budgetController = initBudgets({ getTransactions: () => transactions, getMonth: () => monthFilter.value, categories: EXPENSE_CATEGORIES, onStatus: status });
 
 function saveTransactions() {
   try {
@@ -282,6 +284,7 @@ function renderDashboard(key) {
   setText("#spending-detail", summary.expenseItems.length + " expense entries");
   setText("#net-detail", summary.income ? (summary.net / summary.income * 100).toFixed(1) + "% of income left after spending" : "No income entries recorded");
   renderCategories(summary, key);
+  budgetController.render(summary, key);
   renderTransactions(summary);
   document.title = "SaldoSpiegel — " + formatMonth(key);
 }
@@ -508,5 +511,6 @@ document.querySelector("#transaction-rows").addEventListener("click", (event) =>
 populateTransactionCategoryFilter();
 renderDashboard(refreshMonthOptions(null));
 if (initialData.warning) status(initialData.warning);
+else if (budgetController.warning) status(budgetController.warning);
 else if (initialData.loaded) status("Your saved transactions are loaded from this browser.");
 else status("Sample transactions are shown. Your changes will be saved in this browser.");

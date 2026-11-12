@@ -10,6 +10,7 @@ SaldoSpiegel is a static browser application. It has no backend, database, build
 - styles.css contains the visual styles, responsive layout, focus states, and reduced-motion handling.
 - src/data.js exports the fictional sample transaction list.
 - src/app.js loads saved transactions when available, calculates selected-month totals, updates the month selector, renders the category breakdown and transaction list, applies list filters, validates backups, and handles transaction changes.
+- src/budgets.js validates, stores, and displays monthly spending limits for expense categories.
 
 ## Transaction data
 
@@ -41,3 +42,7 @@ Downloads use a versioned JSON format with a format name, version number, export
 checks the format version, every transaction field, and duplicate IDs before showing a preview. Confirming restore
 replaces the current list and saves it in browser local storage. SaldoSpiegel does not upload backup files; the
 browser saves them to its configured download location, which may be synced elsewhere. The files are not encrypted.
+
+## Monthly budgets
+
+Budgets are stored separately from transactions under the saldospiegel.budgets.v1 local storage key. Each month can have a positive euro-cent limit for any of the fixed expense categories. The dashboard compares each limit with the selected month's recorded expenses in that category. Progress is capped at the limit and changes color when spending exceeds it; the amount above the limit remains visible in text. Budget values are not included in transaction backups.

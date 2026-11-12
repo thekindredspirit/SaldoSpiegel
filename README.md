@@ -2,11 +2,11 @@
 
 SaldoSpiegel is a small personal finance dashboard for reviewing monthly income, spending, and net cash flow. It starts with fictional transactions so the dashboard can be explored before any personal entries are added.
 
-The app runs in a browser and does not connect to a bank. Transactions you add are saved in the browser that you are using.
+The app runs in a browser and does not connect to a bank. Changes stay in the browser you are using.
 
 ## Current milestone
 
-**Local backup and restore (v0.4.0)**
+**Monthly category budgets (v0.5.0)**
 
 This milestone builds on the dashboard foundation with:
 
@@ -17,12 +17,14 @@ This milestone builds on the dashboard foundation with:
 - Search by description or merchant, and filter the list by category or transaction type.
 - A result count, a clear-filters button, and separate empty messages for empty months and unmatched filters.
 - Download a versioned JSON backup and validate a backup file before restoring it.
+- Set monthly spending limits for expense categories, see how much has been spent, and remove limits when they are no longer needed.
 - Forms to add and edit income or expense transactions, and remove entries.
 - Browser storage for transactions after the first change.
 - Responsive layout and visible keyboard focus states.
 
 The initial entries are fictional. After the first successful change, the dashboard uses the list saved in this
-browser. Restoring a backup replaces that list with the entries from the selected file.
+browser. Restoring a backup replaces that list with the entries from the selected file. Category budgets are stored
+separately for each month in the same browser profile and are not included in transaction backups.
 
 ## Run locally
 
@@ -63,7 +65,8 @@ Do not use real personal financial information in screenshots, sample files, or 
 
     index.html            Page structure, dashboard, transaction form, and backup controls
     styles.css            Layout, visual design, and responsive rules
-    src/app.js            Calculations, browser storage, backup validation, and interface behavior
+    src/app.js            Calculations, transaction storage, backup validation, and interface behavior
+    src/budgets.js        Monthly category budget storage and display
     src/data.js           Fictional sample transactions
     docs/architecture.md  Application structure and data flow
     CHANGELOG.md          Milestone notes
@@ -71,6 +74,7 @@ Do not use real personal financial information in screenshots, sample files, or 
 
 ## Current limitations
 
+- Transactions must be entered manually so each entry can be reviewed before saving.
 - Restoring a backup replaces the current transaction list; there is no merge option.
 - Data is stored in one browser profile and is not encrypted.
 - Categories and currency are fixed to the options in the form.
