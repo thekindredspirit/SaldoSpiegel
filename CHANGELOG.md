@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.6.0
+
+- Add a light and dark theme toggle and remember the choice in browser storage.
+
 ## v0.5.0
 
 - Add monthly spending limits for expense categories, with progress and over-budget amounts.

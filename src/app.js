@@ -4,6 +4,7 @@ import { initBudgets } from "./budgets.js";
 const STORAGE_KEY = "saldospiegel.transactions.v1";
 const BACKUP_FORMAT = "saldospiegel-backup";
 const BACKUP_VERSION = 1;
+const THEME_STORAGE_KEY = "saldospiegel.theme.v1";
 const EXPENSE_CATEGORIES = [
   "Housing", "Groceries", "Transport", "Utilities", "Dining", "Education",
   "Subscriptions", "Health", "Leisure", "Shopping", "Fitness"
@@ -27,6 +28,7 @@ const clearFiltersButton = document.querySelector("#clear-transaction-filters");
 const backupFileField = document.querySelector("#backup-file");
 const backupReview = document.querySelector("#backup-review");
 const restoreBackupButton = document.querySelector("#restore-backup");
+const themeToggle = document.querySelector("#theme-toggle");
 let editingId = null;
 let monthKeys = [];
 let pendingBackup = null;
@@ -135,6 +137,23 @@ function status(message) {
 
 function backupStatus(message) {
   setText("#backup-message", message);
+}
+
+function readTheme() {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
+function applyTheme(theme) {
+  const dark = theme === "dark";
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  themeToggle.setAttribute("aria-pressed", String(dark));
+  themeToggle.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+  themeToggle.textContent = dark ? "Light mode" : "Dark mode";
+  document.querySelector('meta[name="theme-color"]').content = dark ? "#17211d" : "#f4f6f3";
 }
 
 function thisMonth() {
@@ -447,6 +466,16 @@ document.querySelector("#discard-backup").addEventListener("click", () => {
   backupFileField.focus();
 });
 restoreBackupButton.addEventListener("click", restoreBackup);
+applyTheme(readTheme());
+themeToggle.addEventListener("click", () => {
+  const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  applyTheme(nextTheme);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+  } catch {
+    status("The theme changed for this tab, but the browser could not remember your choice.");
+  }
+});
 document.querySelector("#add-transaction").addEventListener("click", () => openForm(null));
 typeField.addEventListener("change", () => updateCategories(null));
 amountField.addEventListener("input", () => amountField.setCustomValidity(""));

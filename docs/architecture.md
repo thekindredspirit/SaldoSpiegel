@@ -9,7 +9,7 @@ SaldoSpiegel is a static browser application. It has no backend, database, build
 - index.html contains the dashboard, transaction form, backup controls, and accessible labels.
 - styles.css contains the visual styles, responsive layout, focus states, and reduced-motion handling.
 - src/data.js exports the fictional sample transaction list.
-- src/app.js loads saved transactions when available, calculates selected-month totals, updates the month selector, renders the category breakdown and transaction list, applies list filters, validates backups, and handles transaction changes.
+- src/app.js loads saved transactions when available, calculates selected-month totals, updates the month selector, renders the category breakdown and transaction list, applies list filters, validates backups, handles transaction changes, and remembers the appearance choice.
 - src/budgets.js validates, stores, and displays monthly spending limits for expense categories.
 
 ## Transaction data
@@ -46,3 +46,7 @@ browser saves them to its configured download location, which may be synced else
 ## Monthly budgets
 
 Budgets are stored separately from transactions under the saldospiegel.budgets.v1 local storage key. Each month can have a positive euro-cent limit for any of the fixed expense categories. The dashboard compares each limit with the selected month's recorded expenses in that category. Progress is capped at the limit and changes color when spending exceeds it; the amount above the limit remains visible in text. Budget values are not included in transaction backups.
+
+## Appearance
+
+The page uses the light theme unless a saved choice is available. The top-bar control switches between light and dark themes and stores the selection under the saldospiegel.theme.v1 key in browser local storage. If browser storage is unavailable, the selected theme remains active for the current page only. The theme setting is separate from transaction and budget data.

@@ -2,11 +2,11 @@
 
 SaldoSpiegel is a small personal finance dashboard for reviewing monthly income, spending, and net cash flow. It starts with fictional transactions so the dashboard can be explored before any personal entries are added.
 
-The app runs in a browser and does not connect to a bank. Changes stay in the browser you are using.
+The app runs in a browser and does not connect to a bank. Transaction, budget, and appearance preferences stay in the browser you are using.
 
 ## Current milestone
 
-**Monthly category budgets (v0.5.0)**
+**Interface polish and dark mode (v0.6.0)**
 
 This milestone builds on the dashboard foundation with:
 
@@ -18,6 +18,7 @@ This milestone builds on the dashboard foundation with:
 - A result count, a clear-filters button, and separate empty messages for empty months and unmatched filters.
 - Download a versioned JSON backup and validate a backup file before restoring it.
 - Set monthly spending limits for expense categories, see how much has been spent, and remove limits when they are no longer needed.
+- Switch between light and dark appearance; the selection is remembered in this browser.
 - Forms to add and edit income or expense transactions, and remove entries.
 - Browser storage for transactions after the first change.
 - Responsive layout and visible keyboard focus states.
@@ -45,6 +46,8 @@ Enter a positive amount in euros, using either a dot or comma and up to two deci
 In the transaction panel, search by description or merchant, then filter by category or type. These controls narrow
 the table only; monthly cards and the category breakdown continue to use every transaction in the selected month.
 
+Use the **Dark mode** button in the top bar to change the appearance. The selection is remembered in this browser.
+
 Use **Download JSON backup** to save a copy of your entries. To restore, choose a SaldoSpiegel backup and review its
 entry count. Restoring replaces the current transaction list after confirmation. Backup files contain transaction
 details and are not encrypted, so keep them somewhere private.
@@ -59,13 +62,15 @@ profile and site address, and can be removed when browser data is cleared. Saldo
 the browser saves them to its configured download location, which may be synced elsewhere. Backups contain
 transaction details and are not encrypted.
 
+The light or dark theme choice is saved in browser storage separately from transactions and budgets.
+
 Do not use real personal financial information in screenshots, sample files, or public issue reports. The sample records are fictional and should not be used to make financial decisions.
 
 ## Project structure
 
     index.html            Page structure, dashboard, transaction form, and backup controls
     styles.css            Layout, visual design, and responsive rules
-    src/app.js            Calculations, transaction storage, backup validation, and interface behavior
+    src/app.js            Calculations, transaction storage, backup validation, theme preference, and interface behavior
     src/budgets.js        Monthly category budget storage and display
     src/data.js           Fictional sample transactions
     docs/architecture.md  Application structure and data flow
