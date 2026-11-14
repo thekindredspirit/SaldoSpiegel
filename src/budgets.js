@@ -53,6 +53,7 @@ export function initBudgets({ getTransactions, getMonth, categories, onStatus })
   }
 
   function showSelectedBudget() {
+    amountField.setCustomValidity("");
     const monthBudgets = budgets[getMonth()] || {};
     const cents = monthBudgets[categoryField.value];
     amountField.value = cents ? (cents / 100).toFixed(2) : "";
@@ -99,6 +100,9 @@ export function initBudgets({ getTransactions, getMonth, categories, onStatus })
       track.setAttribute("aria-valuemin", "0");
       track.setAttribute("aria-valuemax", String(limit));
       track.setAttribute("aria-valuenow", String(Math.min(amountSpent, limit)));
+      track.setAttribute("aria-valuetext", amountSpent > limit
+        ? formatMoney(amountSpent) + " spent, " + formatMoney(amountSpent - limit) + " over the " + formatMoney(limit) + " limit"
+        : formatMoney(amountSpent) + " spent, " + formatMoney(limit - amountSpent) + " remaining from " + formatMoney(limit));
       const fill = document.createElement("span");
       fill.className = "budget-fill" + (amountSpent > limit ? " over" : "");
       fill.style.width = Math.min(percentage, 100).toFixed(1) + "%";

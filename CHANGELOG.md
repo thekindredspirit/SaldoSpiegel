@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.0
+
+- Explain how monthly budgets relate to the selected month.
+- Reset stale budget validation when the selected month or category changes.
+- Improve contrast for supporting text and provide currency descriptions for budget meters.
+- Set the dashboard's first stable version.
+
 ## v0.6.0
 
 - Add a light and dark theme toggle and remember the choice in browser storage.

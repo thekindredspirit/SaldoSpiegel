@@ -4,11 +4,9 @@ SaldoSpiegel is a small personal finance dashboard for reviewing monthly income,
 
 The app runs in a browser and does not connect to a bank. Transaction, budget, and appearance preferences stay in the browser you are using.
 
-## Current milestone
+## Features
 
-**Interface polish and dark mode (v0.6.0)**
-
-This milestone builds on the dashboard foundation with:
+The stable release (v1.0.0) includes:
 
 - Monthly income, spending, and net cash flow summaries.
 - Spending totals and shares grouped by category.
@@ -23,9 +21,9 @@ This milestone builds on the dashboard foundation with:
 - Browser storage for transactions after the first change.
 - Responsive layout and visible keyboard focus states.
 
-The initial entries are fictional. After the first successful change, the dashboard uses the list saved in this
-browser. Restoring a backup replaces that list with the entries from the selected file. Category budgets are stored
-separately for each month in the same browser profile and are not included in transaction backups.
+The initial transaction entries are fictional. Transaction changes are saved in this browser's local storage and
+loaded on later visits to the same site from the same browser profile. Restoring a backup replaces the saved
+transaction list. Category budgets are stored separately by month and are not included in transaction backups.
 
 ## Run locally
 
@@ -33,7 +31,7 @@ Open a terminal in this folder and start a local web server:
 
     py -m http.server 8000 --bind 127.0.0.1
 
-Then open http://localhost:8000 in a browser. If the Python launcher is named differently on your system, use Python 3.8 or later to run its built-in HTTP server with the same bind address. Stop the server with Ctrl+C in the terminal.
+Then open http://127.0.0.1:8000 in a browser. If the Python launcher is named differently on your system, use Python 3.8 or later to run its built-in HTTP server with the same bind address. Stop the server with Ctrl+C in the terminal.
 
 No package installation or build step is needed.
 
@@ -45,6 +43,9 @@ Enter a positive amount in euros, using either a dot or comma and up to two deci
 
 In the transaction panel, search by description or merchant, then filter by category or type. These controls narrow
 the table only; monthly cards and the category breakdown continue to use every transaction in the selected month.
+
+In **Category budgets**, choose an expense category and enter a monthly limit. The panel compares that limit with
+spending in the selected month. Budgets apply only to that month and do not carry forward automatically.
 
 Use the **Dark mode** button in the top bar to change the appearance. The selection is remembered in this browser.
 
@@ -68,8 +69,8 @@ Do not use real personal financial information in screenshots, sample files, or 
 
 ## Project structure
 
-    index.html            Page structure, dashboard, transaction form, and backup controls
-    styles.css            Layout, visual design, and responsive rules
+    index.html            Page structure, dashboard panels, transaction form, theme, and backup controls
+    styles.css            Layout, light and dark themes, responsive rules, and focus states
     src/app.js            Calculations, transaction storage, backup validation, theme preference, and interface behavior
     src/budgets.js        Monthly category budget storage and display
     src/data.js           Fictional sample transactions

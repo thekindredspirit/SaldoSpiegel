@@ -45,7 +45,7 @@ browser saves them to its configured download location, which may be synced else
 
 ## Monthly budgets
 
-Budgets are stored separately from transactions under the saldospiegel.budgets.v1 local storage key. Each month can have a positive euro-cent limit for any of the fixed expense categories. The dashboard compares each limit with the selected month's recorded expenses in that category. Progress is capped at the limit and changes color when spending exceeds it; the amount above the limit remains visible in text. Budget values are not included in transaction backups.
+Budgets are stored separately from transactions under the saldospiegel.budgets.v1 local storage key. Each month can have a positive euro-cent limit for any of the fixed expense categories. The dashboard compares each limit with the selected month's recorded expenses in that category. A budget applies only to its month and is not copied into later months. Progress is capped at the limit and changes color when spending exceeds it; the amount above the limit remains visible in text. The meter exposes a currency-formatted value description for assistive technology. Budget values are not included in transaction backups.
 
 ## Appearance
 
